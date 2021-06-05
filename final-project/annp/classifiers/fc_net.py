@@ -201,6 +201,10 @@ class FullyConnectedNet(object):
             in_d, out_d = dims[i:(i+2)]
             self.params["W%d" % (i+1)] = np.random.normal(0.0, weight_scale, (in_d, out_d))
             self.params["b%d" % (i+1)] = np.zeros(out_d, dtype=float)
+        if self.normalization == "batchnorm":
+            for i, dim in enumerate(hidden_dims):
+                self.params["gamma%d" % (i+1)] = np.ones(dim, dtype=float)
+                self.params["beta%d" % (i+1)] = np.zeros(dim, dtype=float)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -265,6 +269,10 @@ class FullyConnectedNet(object):
         for i in range(0, self.num_layers):
             if i == self.num_layers - 1:
                 out, cache = affine_forward(out, self.params["W%d" % (i+1)], self.params["b%d" % (i+1)])
+            elif self.normalization == "batchnorm":
+                gamma = self.params["gamma%d" % (i+1)]
+                beta = self.params["beta%d" % (i+1)]
+                out, cache = affine_bn_relu_forward(out, self.params["W%d" % (i+1)], self.params["b%d" % (i+1)], gamma, beta, self.bn_params[i])
             else:
                 out, cache = affine_relu_forward(out, self.params["W%d" % (i+1)], self.params["b%d" % (i+1)])
             cachelist.append(cache)
@@ -296,10 +304,19 @@ class FullyConnectedNet(object):
         loss, dscores = softmax_loss(scores, y)
         dout = dscores
         for i in range(self.num_layers, 0, -1):
+            cache = cachelist[i-1]
             if i == self.num_layers:
-                dout, grads["W%d" % i], grads["b%d" % i] = affine_backward(dout, cachelist[i-1])
+                dout, dw, db = affine_backward(dout, cache)
             else:
-                dout, grads["W%d" % i], grads["b%d" % i] = affine_relu_backward(dout, cachelist[i-1])
+                if self.normalization == "batchnorm":
+                    dout, dw, db, dgamma, dbeta = affine_bn_relu_backward(dout, cache)
+                    grads["gamma%d" % i] = dgamma
+                    grads["beta%d" % i] = dbeta
+                else:
+                    dout, dw, db = affine_relu_backward(dout, cache)
+            grads["W%d" % i] = dw
+            grads["b%d" % i] = db
+
         for i in range(0, self.num_layers):
             loss += 0.5 * self.reg * (self.params["W%d" % (i+1)] ** 2).sum()
             grads["W%d" % (i+1)] += self.reg * self.params["W%d" % (i+1)]

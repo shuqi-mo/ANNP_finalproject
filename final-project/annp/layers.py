@@ -190,9 +190,12 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # might prove to be helpful.                                          #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        var = x.var(axis=0)
+        mean = x.mean(axis=0)
+        out = gamma * (x - mean) / (var + eps) ** 0.5 + beta
+        running_mean = momentum * running_mean + (1 - momentum) * mean
+        running_var = momentum * running_var + (1 - momentum) * var
+        cache = (x, mean, var, gamma, eps)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
         #                           END OF YOUR CODE                          #
@@ -205,9 +208,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Store the result in the out variable.                               #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        out = (x - running_mean) / running_var ** 0.5
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -247,9 +248,11 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    x, mean, var, gamma, eps = cache
+    N = dout.shape[0]
+    dgamma = (dout * (x - mean) / (var + eps) ** 0.5).sum(axis=0)
+    dbeta = dout.sum(axis=0)
+    dx = gamma * (dout - dbeta / N - dgamma / N * (x - mean) / (var + eps) ** 0.5) / (var + eps) ** 0.5
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -293,9 +296,10 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    var = x.var(axis=0)
+    mean = x.mean(axis=0)
+    out = gamma * (x - mean) / (var + eps) ** 0.5 + beta
+    cache = (x, mean, var, gamma, eps)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -328,9 +332,11 @@ def layernorm_backward(dout, cache):
     # still apply!                                                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    x, mean, var, gamma, eps = cache
+    N = dout.shape[0]
+    dgamma = (dout * (x - mean) / (var + eps) ** 0.5).sum(axis=0)
+    dbeta = dout.sum(axis=0)
+    dx = gamma * (dout - dbeta / N - dgamma / N * (x - mean) / (var + eps) ** 0.5) / (var + eps) ** 0.5
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #

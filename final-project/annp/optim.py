@@ -123,6 +123,8 @@ def adam(w, dw, config=None):
     next_w = None
 
     config['t'] += 1
+    #print("config['m'] {}".format(config['m'].shape))
+    #print("dw {}".format(dw.shape))
     config['m'] = config['beta1'] * config['m'] + (1 - config['beta1']) * dw
     config['v'] = config['beta2'] * config['v'] + (1 - config['beta2']) * (dw**2)
     mb = config['m'] / (1 - config['beta1']**config['t'])
